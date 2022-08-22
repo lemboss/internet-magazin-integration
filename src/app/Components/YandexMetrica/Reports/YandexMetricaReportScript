@@ -1,0 +1,59 @@
+<?php
+
+namespace app\Components\YandexMetrica\Reports;
+
+use App\Components\YandexMetrica\Reports\YandexMetricaReports;
+
+class YandexMetricaReportScript
+{
+    private $metrica;
+
+    public function __construct()
+    {
+        $this->metrica = new YandexMetricaReports;
+    }
+
+    public function handle()
+    {
+        // запрос на получение счетчиков
+        $counters = $this->metrica->getInfoCounters()->counters;
+
+        // собираю id счетчиков
+        $ids = $this->metrica->getIdCounters($counters);
+        
+        $logins = $this->metrica->getOwnerLogin($counters);
+        
+        $names = $this->metrica->getCountersName($counters);
+        
+        $urls = $this->metrica->getUrlsSite($counters);
+
+        $dateFrom = date("Y-m-d", time()-(60*60*24));
+        $dateTo = $dateFrom;
+
+        $objs = [];
+        for ($index = 0; $index < count($counters); ++$index)
+        {
+            $stats = $ya->getStats($ids[$index], $dateFrom, $dateTo, "ym:s:visits,ym:s:pageviews,ym:s:users");
+            $date = $date ?? "";
+            $id_counter = $ids[$index] ?? "";
+            $owner_counter = $logins[$index] ?? "";
+            $name_counter = $names[$index] ?? "";
+            $uri_site = $urls[$index] ?? "";
+            $visits = $stats[0] == "" ? 0 : $stats[0];
+            $views = $stats[1] ?? 0;
+            $users = $stats[2] ?? 0;
+
+            $objs[] = [
+                "date" => $date,
+                "id_counter" => $id_counter,
+                "owner_counter" => $owner_counter,
+                "name_counter" => $name_counter,
+                "uri_site" => $uri_site,
+                "views" => $views,
+                "visits" => $visits,
+                "users" => $users,
+            ];
+        }
+        return $objs;
+    }
+}
